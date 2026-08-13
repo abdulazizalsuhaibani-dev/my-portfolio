@@ -32,8 +32,8 @@ export const links = {
   email: 'ama.alsuhibani@gmail.com',
   phone: '+966505611519',
   phoneDisplay: '+966 50 561 1519',
-  github: 'https://github.com/ama47',
-  githubHandle: 'ama47',
+  github: 'https://github.com/abdulazizalsuhaibani-dev',
+  githubHandle: 'abdulazizalsuhaibani-dev',
   linkedin: 'https://www.linkedin.com/in/abdulaziz-alsuhaibani-539982239/',
   linkedinHandle: 'abdulaziz-alsuhaibani',
 } as const;
@@ -118,10 +118,10 @@ const issuers = {
 /** Public repositories behind the projects. Verified public before linking. */
 const repos = {
   gameStore: [
-    { name: 'game-accessories-store', url: 'https://github.com/ama47/game-accessories-store' },
-    { name: 'game-accessories-api', url: 'https://github.com/ama47/game-accessories-api' },
+    { name: 'game-accessories-store', url: 'https://github.com/abdulazizalsuhaibani-dev/game-accessories-store' },
+    { name: 'game-accessories-api', url: 'https://github.com/abdulazizalsuhaibani-dev/game-accessories-api' },
   ],
-  captcha: [{ name: 'ArabicLearningGame', url: 'https://github.com/ama47/ArabicLearningGame' }],
+  captcha: [{ name: 'ArabicLearningGame', url: 'https://github.com/abdulazizalsuhaibani-dev/ArabicLearningGame' }],
 } as const;
 
 const skillItems = {
