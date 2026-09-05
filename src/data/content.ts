@@ -118,8 +118,10 @@ const issuers = {
 /** Public repositories behind the projects. Verified public before linking. */
 const repos = {
   gameStore: [
-    { name: 'game-accessories-store', url: 'https://github.com/abdulazizalsuhaibani-dev/game-accessories-store' },
-    { name: 'game-accessories-api', url: 'https://github.com/abdulazizalsuhaibani-dev/game-accessories-api' },
+    {
+      name: 'game-accessories-platform',
+      url: 'https://github.com/abdulazizalsuhaibani-dev/game-accessories-platform',
+    },
   ],
   captcha: [{ name: 'ArabicLearningGame', url: 'https://github.com/abdulazizalsuhaibani-dev/ArabicLearningGame' }],
 } as const;
