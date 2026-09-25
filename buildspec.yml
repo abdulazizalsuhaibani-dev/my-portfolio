@@ -1,0 +1,40 @@
+# AWS CodeBuild spec, run by the CodePipeline build stage on push to main.
+#
+# Builds the site and publishes dist/ to the S3 static-website bucket. There is
+# no separate deploy stage: the upload happens here so hashed assets and
+# index.html can get different Cache-Control headers.
+version: 0.2
+
+env:
+  variables:
+    BUCKET: abdulaziz-alsuhaibani-myportfolio-website
+    # Set to the CloudFront distribution ID once one fronts the bucket; while
+    # empty, the invalidation step is skipped.
+    DISTRIBUTION_ID: ""
+  # Optional. Without these the build still succeeds and the contact form
+  # reports "not configured". Uncomment only after creating the parameters —
+  # a missing parameter fails the build.
+  # parameter-store:
+  #   VITE_CONTACT_ENDPOINT: /portfolio/VITE_CONTACT_ENDPOINT
+  #   VITE_CONTACT_ACCESS_KEY: /portfolio/VITE_CONTACT_ACCESS_KEY
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 20
+    commands:
+      - npm ci
+  build:
+    commands:
+      - npm run build
+  post_build:
+    commands:
+      # post_build runs even after a failed build; never upload a broken dist/.
+      - '[ "$CODEBUILD_BUILD_SUCCEEDING" = "1" ] || exit 1'
+      # Hashed assets first, so the new index.html never references missing files.
+      - aws s3 sync dist/assets "s3://$BUCKET/assets" --delete --cache-control "public,max-age=31536000,immutable"
+      - aws s3 sync dist "s3://$BUCKET" --delete --exclude "assets/*" --cache-control "public,max-age=0,must-revalidate"
+      - |
+        if [ -n "$DISTRIBUTION_ID" ]; then
+          aws cloudfront create-invalidation --distribution-id "$DISTRIBUTION_ID" --paths "/*"
+        fi
