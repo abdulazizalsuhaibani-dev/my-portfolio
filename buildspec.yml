@@ -14,9 +14,9 @@ env:
   # Optional. Without these the build still succeeds and the contact form
   # reports "not configured". Uncomment only after creating the parameters —
   # a missing parameter fails the build.
-  # parameter-store:
-  #   VITE_CONTACT_ENDPOINT: /portfolio/VITE_CONTACT_ENDPOINT
-  #   VITE_CONTACT_ACCESS_KEY: /portfolio/VITE_CONTACT_ACCESS_KEY
+  parameter-store:
+    VITE_CONTACT_ENDPOINT: /my-portfolio/VITE_CONTACT_ENDPOINT
+    VITE_CONTACT_ACCESS_KEY: /my-portfolio/VITE_CONTACT_ACCESS_KEY
 
 phases:
   install:
