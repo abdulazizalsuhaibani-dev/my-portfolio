@@ -56,15 +56,15 @@ cp .env.example .env   # then paste the key into VITE_CONTACT_ACCESS_KEY
 ```
 
 Restart the dev server afterwards; Vite reads env files only at startup. For the
-deployed site the same two values come from the Cloudflare dashboard instead —
-see [Deployment](#deployment).
+deployed site the same two values come from AWS Systems Manager Parameter Store
+instead — see [Deployment](#deployment).
 
 Messages arrive with the sender's address as `Reply-To`, so replying in your
 mail client reaches them rather than you.
 
 **The access key cannot be hidden from visitors.** A static site has nothing to
 hide it behind, so Vite inlines it into the JS bundle whatever you do. Storing
-it in `.env` (gitignored) and as an Actions secret keeps it out of the
+it in `.env` (gitignored) and in Parameter Store keeps it out of the
 repository and out of build logs, where scraping bots look — but not out of
 devtools. The worst case is someone burning the monthly quota on mail addressed
 to you.
@@ -112,34 +112,32 @@ The palette is defined once as CSS custom properties in `src/index.css`
 ## Deployment
 
 Pushing to `main` builds and publishes to
-**[my-portfolio.abdulazizalsuhaibani.workers.dev](https://my-portfolio.abdulazizalsuhaibani.workers.dev)**,
-via Cloudflare's own Git integration (Workers & Pages → the `my-portfolio`
-project), not GitHub Actions. `.github/workflows/ci.yml` still runs
-`npm run build` on pull requests and other branches as a check, but nothing
-in `.github/` deploys.
+**[abdulazizalsuhaibani.com](https://abdulazizalsuhaibani.com)** on AWS, not
+via GitHub Actions. `.github/workflows/ci.yml` still runs `npm run build` on
+pull requests and other branches as a check, but nothing in `.github/`
+deploys.
 
-Two one-time settings live in the Cloudflare dashboard, under the
-`my-portfolio` project's **Settings → Build**:
+```
+GitHub push → CodePipeline → CodeBuild (buildspec.yml) → S3 → CloudFront ← Route 53
+```
 
-- **Build command**: `npm run build`. The **Deploy command**
-  (`npx wrangler deploy`) reads [`wrangler.jsonc`](wrangler.jsonc)'s
-  `assets.directory` to find `dist/`, but does not build it — the build
-  command has to run `vite build` first.
-- **Variables and secrets** (Production, and Preview too if you want deploy
-  previews to have a working contact form):
+- **CodePipeline** `abdulaziz-alsuhaibani-myportfolio-pipeline` (eu-west-1)
+  picks up the push and runs the CodeBuild project
+  `abdulaziz-alsuhaibani-myportfolio-build`.
+- **[`buildspec.yml`](buildspec.yml)** runs `npm run build`, uploads `dist/`
+  to the S3 bucket `abdulaziz-alsuhaibani-myportfolio-website` (hashed
+  `assets/` cached for a year, `index.html` always revalidated), then
+  invalidates the CloudFront cache.
+- **CloudFront** serves `abdulazizalsuhaibani.com` and `www` over HTTPS with
+  an ACM certificate; **Route 53** hosts the DNS and is also the registrar.
 
-  | Name | Type | Value |
-  | --- | --- | --- |
-  | `VITE_CONTACT_ENDPOINT` | Text | `https://api.web3forms.com/submit` |
-  | `VITE_CONTACT_ACCESS_KEY` | Secret | your Web3Forms key |
+The contact form's values are read at build time from Parameter Store:
 
-  Both are optional — without them the site still deploys, and the contact
-  form reports "not configured" on submit.
+| Parameter | Type | Value |
+| --- | --- | --- |
+| `/my-portfolio/VITE_CONTACT_ENDPOINT` | String | `https://api.web3forms.com/submit` |
+| `/my-portfolio/VITE_CONTACT_ACCESS_KEY` | SecureString | your Web3Forms key |
 
-For a one-off manual deploy from your machine: `npm run deploy` (builds, then
-runs `wrangler deploy`); it needs `npx wrangler login` once beforehand.
-
-The site deploys to its default `*.workers.dev` URL until a custom domain is
-attached. That's a Cloudflare dashboard step (the project → Custom domains)
-done once a domain is chosen — no repo change, and unlike GitHub Pages, no
-`CNAME` file in `public/`.
+Both are optional, but `buildspec.yml` references them — if you don't create
+them, remove the `parameter-store` block, or the build fails. Without them the
+contact form reports "not configured" on submit.

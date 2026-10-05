@@ -8,9 +8,9 @@ version: 0.2
 env:
   variables:
     BUCKET: abdulaziz-alsuhaibani-myportfolio-website
-    # Set to the CloudFront distribution ID once one fronts the bucket; while
-    # empty, the invalidation step is skipped.
-    DISTRIBUTION_ID: ""
+    # CloudFront distribution in front of the bucket. The CodeBuild role may
+    # invalidate only this ID; while empty, the invalidation step is skipped.
+    DISTRIBUTION_ID: E1C5938ABA94M6
   # Optional. Without these the build still succeeds and the contact form
   # reports "not configured". Uncomment only after creating the parameters —
   # a missing parameter fails the build.

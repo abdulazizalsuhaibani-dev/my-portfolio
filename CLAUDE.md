@@ -130,7 +130,7 @@ Several things look unfinished but are decisions:
   so no message is silently lost — keep that path working.
 
   The transport is Web3Forms. The access key **cannot be hidden from visitors** —
-  Vite inlines it into the bundle regardless. `.env` and the Actions secret keep
+  Vite inlines it into the bundle regardless. `.env` and Parameter Store keep
   it out of the repo and out of build logs, nothing more. So do not add anything
   to the payload that genuinely needs protecting.
 
@@ -182,39 +182,53 @@ Several things look unfinished but are decisions:
   `OrgMark` in `content.ts` is a discriminated union — its `monogram` variant is
   currently unused and exists as the fallback for an organisation whose artwork
   cannot be sourced.
-- **Deployment is Cloudflare, served from the domain root, and Cloudflare's own
-  Git integration builds it — not GitHub Actions.** `vite.config.ts` sets
-  `base: '/'` — for dev as well as build, deliberately, so the dev server and
-  production agree and a path that ignores the base fails immediately rather
-  than only once deployed.
+- **Deployment is AWS: S3 + CloudFront, built by CodePipeline/CodeBuild,
+  DNS in Route 53 — not GitHub Actions and no longer Cloudflare.**
+  `vite.config.ts` sets `base: '/'` — for dev as well as build, deliberately,
+  so the dev server and production agree and a path that ignores the base
+  fails immediately rather than only once deployed.
 
-  The `my-portfolio` project (Workers & Pages in the Cloudflare dashboard) is
-  connected directly to this GitHub repo. On push to `main`, Cloudflare clones
-  the repo, runs the **Build command** configured in the project's dashboard
-  settings (`npm run build`), then its default **Deploy command**
-  (`npx wrangler deploy`), which reads [`wrangler.jsonc`](wrangler.jsonc)'s
-  `assets.directory` to find `dist/` and uploads it — no `main` Worker script,
-  just static assets. `wrangler.jsonc`'s `name` must match the dashboard
-  project name exactly, or `wrangler deploy` creates/updates a different
-  Worker instead of this one. `ci.yml` still runs `npm run build` on pull
-  requests and pushes to other branches as a plain check; it does not deploy
-  and is unrelated to the Cloudflare build.
+  All of it lives in AWS account `502377191133`:
 
-  The contact form's `VITE_CONTACT_ENDPOINT` / `VITE_CONTACT_ACCESS_KEY` are
-  set as environment variables on the Cloudflare project (Settings →
-  Environment variables), not GitHub Actions secrets — Cloudflare's build is
-  what runs `vite build` now, so that's where Vite reads `VITE_*` from. Both
-  are optional; without them the site still deploys and the contact form
-  reports "not configured" on submit.
+  | Piece | Resource |
+  |---|---|
+  | Pipeline (eu-west-1) | CodePipeline `abdulaziz-alsuhaibani-myportfolio-pipeline`: GitHub source → CodeBuild `abdulaziz-alsuhaibani-myportfolio-build` |
+  | Origin (eu-west-1) | S3 static-website bucket `abdulaziz-alsuhaibani-myportfolio-website` |
+  | CDN | CloudFront `E1C5938ABA94M6` (`d12ufvxal5remr.cloudfront.net`), aliases apex + `www`, `redirect-to-https`, WAF attached |
+  | TLS | ACM cert in **us-east-1** (CloudFront requires that region) for apex + `www`, DNS-validated |
+  | DNS | Route 53 hosted zone `Z09761131CZHHLAX934ZP`; apex and `www` are A/AAAA **alias** records to CloudFront |
+  | Registrar | Route 53 Domains (transferred from Cloudflare Registrar 2026-10-05), transfer lock + auto-renew on |
 
-  `npm run deploy` (`vite build` then `wrangler deploy`) exists for manual,
-  local deploys — mainly useful to test a `wrangler.jsonc` change before
-  pushing, since it needs `npx wrangler login` first and otherwise duplicates
-  what Cloudflare already does on push.
+  On push to `main`, the pipeline runs [`buildspec.yml`](buildspec.yml), which
+  builds and then uploads `dist/` itself — there is no separate deploy stage,
+  so hashed `assets/` can get a one-year immutable `Cache-Control` while
+  `index.html` gets `max-age=0,must-revalidate`. Assets are synced *before*
+  `index.html` so a new page never references files that aren't there yet,
+  and `post_build` exits early on a failed build so a broken `dist/` is never
+  uploaded. It then invalidates `DISTRIBUTION_ID`; the CodeBuild role's
+  inline policy `abdulaziz-alsuhaibani-myportfolio-cloudfront-invalidate`
+  allows `cloudfront:CreateInvalidation` on that one distribution only, so
+  changing the ID means changing the policy too. `ci.yml` still runs
+  `npm run build` on pull requests and pushes to other branches as a plain
+  check; it does not deploy.
 
-  No SPA 404 fallback (there is no router). Attaching a custom domain is a
-  Cloudflare dashboard step (the project → Custom domains), not a repo change
-  — unlike GitHub Pages, Cloudflare needs no `CNAME` file in `public/`.
+  The contact form's `VITE_CONTACT_ENDPOINT` / `VITE_CONTACT_ACCESS_KEY` come
+  from SSM Parameter Store (`/my-portfolio/VITE_CONTACT_*`), pulled in by
+  `buildspec.yml`'s `parameter-store` block — CodeBuild is what runs
+  `vite build`, so that's where Vite reads `VITE_*` from. **A parameter listed
+  there that doesn't exist fails the build**; remove the line rather than
+  leaving it pointing at nothing. Without them the contact form reports "not
+  configured" on submit.
+
+  **Do not delete the two `_…acm-validations.aws` CNAMEs in Route 53** — ACM
+  re-checks them to auto-renew the certificate. The apex must stay an alias
+  record; a CNAME is not allowed at the zone apex.
+
+  `wrangler.jsonc` and the `npm run deploy` script (`wrangler deploy`) are
+  leftovers from the Cloudflare deployment and no longer deploy the live site.
+
+  No SPA 404 fallback (there is no router). Domain and DNS changes are AWS
+  console/CLI steps, not repo changes — no `CNAME` file in `public/`.
 - **`tsconfig.json` is a single project with no references.** An earlier
   `tsc -b` + `tsconfig.node.json` setup failed with TS6310 (referenced projects
   may not disable emit). Do not reintroduce project references without also
