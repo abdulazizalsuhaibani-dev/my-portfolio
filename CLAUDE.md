@@ -224,9 +224,6 @@ Several things look unfinished but are decisions:
   re-checks them to auto-renew the certificate. The apex must stay an alias
   record; a CNAME is not allowed at the zone apex.
 
-  `wrangler.jsonc` and the `npm run deploy` script (`wrangler deploy`) are
-  leftovers from the Cloudflare deployment and no longer deploy the live site.
-
   No SPA 404 fallback (there is no router). Domain and DNS changes are AWS
   console/CLI steps, not repo changes — no `CNAME` file in `public/`.
 - **`tsconfig.json` is a single project with no references.** An earlier
