@@ -24,7 +24,7 @@ function code is updated by pasting `index.mjs` into the Lambda editor.
 | DynamoDB | `abdulaziz-alsuhaibani-myportfolio-contact-messages`, partition key `id` (String), on-demand, deletion protection on |
 | IAM role | `abdulaziz-alsuhaibani-myportfolio-contact-role`: `AWSLambdaBasicExecutionRole` + inline [`iam-policy.json`](iam-policy.json) |
 | Log group | `/aws/lambda/abdulaziz-alsuhaibani-myportfolio-contact`, 1 month retention |
-| Lambda | `abdulaziz-alsuhaibani-myportfolio-contact`, Node.js 22.x, arm64, 128 MB, 10 s, reserved concurrency 2 |
+| Lambda | `abdulaziz-alsuhaibani-myportfolio-contact`, Node.js 22.x, arm64, 128 MB, 10 s, no reserved concurrency (see below) |
 | Function URL | auth `NONE`, CORS origins `https://abdulazizalsuhaibani.com` and `https://www.abdulazizalsuhaibani.com`, methods `POST`, headers `content-type`, `accept` |
 | Budget | monthly cost alert at $2 |
 
@@ -45,6 +45,11 @@ function code is updated by pasting `index.mjs` into the Lambda editor.
   duplicated headers make browsers reject the response.
 - **A ticked honeypot gets `success: true`** so a bot learns nothing. Nothing
   is stored or sent.
+- **There is no reserved concurrency.** The account's Lambda concurrency
+  limit in eu-west-1 is 100, and AWS keeps 100 unreserved, so nothing can be
+  reserved. Cost is bounded instead by the SES sandbox (200 emails a day), the
+  16 kB payload limit and the $2 budget alert. Raising the account limit
+  through Service Quotas would allow capping the function at 2.
 - **Validation is stricter than the browser's.** The address becomes a
   `Reply-To` header, so characters that could extend an address list are
   refused.

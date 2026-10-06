@@ -67,8 +67,9 @@ Messages arrive with the sender's address as `Reply-To`, so replying in your
 mail client reaches them rather than you. If an email fails to send, the
 message is still in the DynamoDB table.
 
-Spam protection is a hidden `botcheck` honeypot, plus reserved concurrency on
-the function so a flood cannot run up the bill.
+Spam protection is a hidden `botcheck` honeypot. A flood cannot run up much of
+a bill: the SES sandbox caps sending at 200 emails a day, the payload is
+size-limited, and a $2 monthly budget alert is the backstop.
 
 To switch to a hosted form service such as Web3Forms instead, point
 `VITE_CONTACT_ENDPOINT` at it and set `VITE_CONTACT_ACCESS_KEY`. The key is
