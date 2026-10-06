@@ -55,9 +55,9 @@ export function Contact() {
 
     setStatus('submitting');
     try {
-      // Web3Forms reads `email` as the Reply-To address, so replying in a mail
-      // client reaches the sender rather than yourself. `access_key` is omitted
-      // when unset, keeping the body clean for a self-hosted endpoint later.
+      // The endpoint uses `email` as the Reply-To address, so replying in a mail
+      // client reaches the sender rather than yourself. `access_key` is only
+      // for a hosted form service and is omitted when unset.
       const body: Record<string, unknown> = {
         ...fields,
         subject: CONTACT_SUBJECT,
@@ -134,7 +134,7 @@ export function Contact() {
           />
 
           {/* Honeypot: hidden from people and from assistive tech, so anything
-              that ticks it is a bot and Web3Forms drops the submission. Being
+              that ticks it is a bot and the endpoint drops the submission. Being
               display:none it takes part in no layout, RTL included. */}
           <input
             type="checkbox"
