@@ -11,12 +11,12 @@ env:
     # CloudFront distribution in front of the bucket. The CodeBuild role may
     # invalidate only this ID; while empty, the invalidation step is skipped.
     DISTRIBUTION_ID: E1C5938ABA94M6
-  # Optional. Without these the build still succeeds and the contact form
-  # reports "not configured". Both parameters must exist — a missing one fails
-  # the build, so remove its line rather than leave it pointing at nothing.
+  # The contact form's Lambda Function URL (see infra/contact/). Without it the
+  # contact form reports "not configured". A listed parameter that does not
+  # exist fails the build, so remove its line rather than leave it pointing at
+  # nothing. VITE_CONTACT_ACCESS_KEY is not listed: the Lambda needs no key.
   parameter-store:
     VITE_CONTACT_ENDPOINT: /my-portfolio/VITE_CONTACT_ENDPOINT
-    VITE_CONTACT_ACCESS_KEY: /my-portfolio/VITE_CONTACT_ACCESS_KEY
 
 phases:
   install:

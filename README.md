@@ -48,34 +48,32 @@ The form is fully built and validates input, but **ships with no endpoint**.
 Submitting reports "not configured" rather than pretending to send, so no
 message is ever silently lost.
 
-It posts to [Web3Forms](https://web3forms.com), which needs no account — enter
-your email on their site and a key is sent to you. Then:
+It posts to an AWS Lambda Function URL that stores every message in DynamoDB
+and emails it to you through SES. The AWS setup, the function code and how to
+read stored messages are in [`infra/contact/`](infra/contact/README.md).
+
+For local development, put the Function URL in `.env`:
 
 ```bash
-cp .env.example .env   # then paste the key into VITE_CONTACT_ACCESS_KEY
+cp .env.example .env   # then paste the URL into VITE_CONTACT_ENDPOINT
 ```
 
-Restart the dev server afterwards; Vite reads env files only at startup. For the
-deployed site the same two values come from AWS Systems Manager Parameter Store
-instead — see [Deployment](#deployment).
+Restart the dev server afterwards; Vite reads env files only at startup. The
+Function URL's CORS settings must also allow `http://localhost:5173`. For the
+deployed site the URL comes from AWS Systems Manager Parameter Store instead.
+See [Deployment](#deployment).
 
 Messages arrive with the sender's address as `Reply-To`, so replying in your
-mail client reaches them rather than you.
+mail client reaches them rather than you. If an email fails to send, the
+message is still in the DynamoDB table.
 
-**The access key cannot be hidden from visitors.** A static site has nothing to
-hide it behind, so Vite inlines it into the JS bundle whatever you do. Storing
-it in `.env` (gitignored) and in Parameter Store keeps it out of the
-repository and out of build logs, where scraping bots look — but not out of
-devtools. The worst case is someone burning the monthly quota on mail addressed
-to you.
+Spam protection is a hidden `botcheck` honeypot, plus reserved concurrency on
+the function so a flood cannot run up the bill.
 
-Spam protection is a hidden `botcheck` honeypot plus Web3Forms' own filtering.
-Their docs consider the honeypot weak on its own and suggest hCaptcha; that is
-worth adding only if spam actually starts arriving.
-
-To move to a self-hosted endpoint later, point `VITE_CONTACT_ENDPOINT` at it and
-leave `VITE_CONTACT_ACCESS_KEY` empty — the key is only sent when set, and no
-component changes.
+To switch to a hosted form service such as Web3Forms instead, point
+`VITE_CONTACT_ENDPOINT` at it and set `VITE_CONTACT_ACCESS_KEY`. The key is
+only sent when set, and no component changes. Such a key cannot be hidden from
+visitors: Vite inlines it into the JS bundle.
 
 ## Features
 
@@ -101,6 +99,8 @@ src/
   components/
     sections/           the eight page sections
     ...                 rail, palette, cards, timeline, primitives
+infra/
+  contact/              contact form Lambda + its AWS setup (not built by Vite)
 ```
 
 ## Design tokens
@@ -135,9 +135,8 @@ The contact form's values are read at build time from Parameter Store:
 
 | Parameter | Type | Value |
 | --- | --- | --- |
-| `/my-portfolio/VITE_CONTACT_ENDPOINT` | String | `https://api.web3forms.com/submit` |
-| `/my-portfolio/VITE_CONTACT_ACCESS_KEY` | SecureString | your Web3Forms key |
+| `/my-portfolio/VITE_CONTACT_ENDPOINT` | String | the Lambda Function URL |
 
-Both are optional, but `buildspec.yml` references them — if you don't create
-them, remove the `parameter-store` block, or the build fails. Without them the
+It is optional, but `buildspec.yml` references it. If you don't create it,
+remove the `parameter-store` block, or the build fails. Without them the
 contact form reports "not configured" on submit.

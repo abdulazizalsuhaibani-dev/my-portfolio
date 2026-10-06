@@ -129,16 +129,30 @@ Several things look unfinished but are decisions:
   validates, but submitting reports "not configured" instead of faking success,
   so no message is silently lost — keep that path working.
 
-  The transport is Web3Forms. The access key **cannot be hidden from visitors** —
-  Vite inlines it into the bundle regardless. `.env` and Parameter Store keep
-  it out of the repo and out of build logs, nothing more. So do not add anything
-  to the payload that genuinely needs protecting.
+  The transport is an AWS Lambda Function URL in eu-west-1 whose code lives in
+  [`infra/contact/`](infra/contact/README.md). It stores each message in
+  DynamoDB (`abdulaziz-alsuhaibani-myportfolio-contact-messages`) and then
+  emails it via SES with the visitor as `Reply-To`. The table is the record and
+  the email only a notification: a failed send is logged, still answers
+  `success: true`, and loses nothing. That README lists every resource and why
+  it is configured the way it is.
 
-  `access_key` is merged into the body only when non-empty, which is what makes
-  swapping in a self-hosted endpoint a config change rather than a code change.
+  The function is **not deployed by the pipeline**. It is pasted into the
+  Lambda console, so editing `infra/contact/index.mjs` changes nothing live
+  until someone does that. It is plain ESM JavaScript, outside `tsconfig`'s
+  `include`, and imports only the AWS SDK clients the Node.js runtime ships.
+  It must not set CORS headers: the Function URL adds them, and duplicates
+  make browsers reject the response.
+
+  `access_key` is merged into the body only when non-empty. The Lambda needs
+  none, so it is unset; the mechanism stays so that switching to a hosted form
+  service such as Web3Forms is a config change rather than a code change. Such
+  a key **cannot be hidden from visitors**, because Vite inlines it into the
+  bundle. So do not add anything to the payload that genuinely needs
+  protecting.
   `CONTACT_SUBJECT` lives in `config.ts` rather than `content.ts` on purpose: it
   is never rendered and lands in the owner's inbox, so the visitor's locale must
-  not choose its language.
+  not choose its language. The Lambda uses it as the email subject prefix.
 
   Success is decided by the response body (`success === true`), not the HTTP
   status — a submission rejected as spam still returns a readable response, and
@@ -212,12 +226,12 @@ Several things look unfinished but are decisions:
   `npm run build` on pull requests and pushes to other branches as a plain
   check; it does not deploy.
 
-  The contact form's `VITE_CONTACT_ENDPOINT` / `VITE_CONTACT_ACCESS_KEY` come
-  from SSM Parameter Store (`/my-portfolio/VITE_CONTACT_*`), pulled in by
+  The contact form's `VITE_CONTACT_ENDPOINT` (the Function URL) comes from SSM
+  Parameter Store (`/my-portfolio/VITE_CONTACT_ENDPOINT`), pulled in by
   `buildspec.yml`'s `parameter-store` block — CodeBuild is what runs
   `vite build`, so that's where Vite reads `VITE_*` from. **A parameter listed
   there that doesn't exist fails the build**; remove the line rather than
-  leaving it pointing at nothing. Without them the contact form reports "not
+  leaving it pointing at nothing. Without it the contact form reports "not
   configured" on submit.
 
   **Do not delete the two `_…acm-validations.aws` CNAMEs in Route 53** — ACM
