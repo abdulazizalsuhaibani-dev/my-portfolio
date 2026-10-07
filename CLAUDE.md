@@ -62,7 +62,10 @@ that work.
 `tailwind.config.js` maps them with `rgb(var(--primary) / <alpha-value>)`, which
 is what makes `bg-primary/10` and `text-ink/70` work.
 
-Adding a colour means adding it in both files, in that format. Use the token
+Adding a colour means adding it in both files, in that format. The contact
+notification email (`infra/contact/index.mjs`, `LIGHT`/`DARK`) repeats the
+palette as hex because mail clients cannot read the variables — a palette
+change must be copied there too. Use the token
 classes (`bg-surface`, `text-ink`, `border-rule`, `text-ink-muted`) rather than
 raw Tailwind palette colours, so both themes stay in sync automatically. Reds
 for form errors are the deliberate exception.
