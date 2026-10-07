@@ -54,7 +54,7 @@ CORS, role) is not touched by the pipeline.
   16 kB payload limit and the $2 budget alert. Raising the account limit
   through Service Quotas would allow capping the function at 2.
 - **The notification is HTML with a plain-text alternative.** It mirrors the
-  site's look (prompt line, `── 08 CONTACT` rule, mono labels), so its palette
+  site's look (prompt line, `── CONTACT` rule, mono labels), so its palette
   is `src/index.css` written out as hex in `LIGHT`/`DARK`: change a token there
   and change it here. Tables and inline styles are deliberate; mail clients
   ignore CSS variables and most stylesheets. Every visitor value goes through

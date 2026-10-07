@@ -179,7 +179,7 @@ function singleLine(value) {
 // ---------------------------------------------------------------------------
 // HTML notification
 //
-// Mirrors the site's design: the `$` prompt, the "── 08 CONTACT ───" section
+// Mirrors the site's design: the `$` prompt, the "── CONTACT ───" section
 // rule, mono chrome over a sans body, and the palette from src/index.css
 // written out as hex, because mail clients understand neither CSS variables nor
 // Tailwind. Tables and inline styles are what mail clients reliably render;
@@ -261,7 +261,7 @@ function renderHtml({ id, name, email, message, subject, createdAt, sourceIp }) 
           <td class="card" style="background:${c.surface};border:1px solid ${c.rule};border-radius:12px;padding:28px;">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
               <tr>
-                <td class="primary" style="padding-right:10px;white-space:nowrap;font-family:${MONO};font-size:13px;color:${c.primary};">──&nbsp;08</td>
+                <td class="primary" style="padding-right:10px;white-space:nowrap;font-family:${MONO};font-size:13px;color:${c.primary};">──</td>
                 <td class="ink" style="padding-right:12px;white-space:nowrap;font-family:${MONO};font-size:16px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:${c.ink};">Contact</td>
                 <td width="100%" style="vertical-align:middle;"><div class="rule" style="border-top:1px solid ${c.rule};height:0;line-height:0;font-size:0;">&nbsp;</div></td>
               </tr>
