@@ -53,6 +53,13 @@ CORS, role) is not touched by the pipeline.
   reserved. Cost is bounded instead by the SES sandbox (200 emails a day), the
   16 kB payload limit and the $2 budget alert. Raising the account limit
   through Service Quotas would allow capping the function at 2.
+- **The notification is HTML with a plain-text alternative.** It mirrors the
+  site's look (prompt line, `── CONTACT` rule, mono labels), so its palette
+  is `src/index.css` written out as hex in `LIGHT`/`DARK`: change a token there
+  and change it here. Tables and inline styles are deliberate; mail clients
+  ignore CSS variables and most stylesheets. Every visitor value goes through
+  `escapeHtml()`, and the `mailto:` address is percent-encoded so a crafted
+  address cannot add `cc=` or other headers.
 - **Validation is stricter than the browser's.** The address becomes a
   `Reply-To` header, so characters that could extend an address list are
   refused.
