@@ -125,8 +125,9 @@ GitHub push → CodePipeline → CodeBuild (buildspec.yml) → S3 → CloudFront
 - **CodePipeline** `abdulaziz-alsuhaibani-myportfolio-pipeline` (eu-west-1)
   picks up the push and runs the CodeBuild project
   `abdulaziz-alsuhaibani-myportfolio-build`.
-- **[`buildspec.yml`](buildspec.yml)** runs `npm run build`, uploads `dist/`
-  to the S3 bucket `abdulaziz-alsuhaibani-myportfolio-website` (hashed
+- **[`buildspec.yml`](buildspec.yml)** runs `npm run build`, deploys the
+  contact form's Lambda code from [`infra/contact/`](infra/contact/README.md),
+  uploads `dist/` to the S3 bucket `abdulaziz-alsuhaibani-myportfolio-website` (hashed
   `assets/` cached for a year, `index.html` always revalidated), then
   invalidates the CloudFront cache.
 - **CloudFront** serves `abdulazizalsuhaibani.com` and `www` over HTTPS with

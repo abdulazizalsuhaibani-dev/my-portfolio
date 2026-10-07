@@ -14,9 +14,11 @@ stored and the function logs `SES SendEmail failed for message <id>`. To read
 messages, open **DynamoDB → Tables →
 `abdulaziz-alsuhaibani-myportfolio-contact-messages` → Explore table items**.
 
-Everything is in account `502377191133`, region **eu-west-1**. None of it is
-deployed by the site pipeline. It is set up once in the console, and the
-function code is updated by pasting `index.mjs` into the Lambda editor.
+Everything is in account `502377191133`, region **eu-west-1**, and was set up
+once in the console. The one thing the site pipeline deploys is the function
+**code**: on push to `main`, `buildspec.yml` zips `index.mjs` and uploads it
+before publishing the site. Configuration (environment variables, Function URL,
+CORS, role) is not touched by the pipeline.
 
 | Piece | Resource |
 |---|---|
@@ -27,6 +29,7 @@ function code is updated by pasting `index.mjs` into the Lambda editor.
 | Lambda | `abdulaziz-alsuhaibani-myportfolio-contact`, Node.js 22.x, arm64, 128 MB, 10 s, no reserved concurrency (see below) |
 | Function URL | auth `NONE`, CORS origins `https://abdulazizalsuhaibani.com` and `https://www.abdulazizalsuhaibani.com`, methods `POST`, headers `content-type`, `accept` |
 | Budget | monthly cost alert at $2 |
+| Deploy permission | inline policy `abdulaziz-alsuhaibani-myportfolio-lambda-deploy` on the CodeBuild service role: [`deploy-policy.json`](deploy-policy.json), this one function only |
 
 ## Environment variables
 
@@ -56,7 +59,13 @@ function code is updated by pasting `index.mjs` into the Lambda editor.
 
 ## Updating the function
 
-1. Paste `index.mjs` into **Lambda → Code** and click **Deploy**.
+1. Edit `index.mjs` and merge to `main`. The pipeline runs `node --check` on
+   it, uploads it with `aws lambda update-function-code` and waits for the
+   update to finish before syncing the site; a failure there stops the site
+   upload too. `ci.yml` runs the same syntax check on pull requests.
+
+   Do not edit the code in the Lambda console: the next push to `main`
+   overwrites it.
 2. Test it with:
 
    ```bash

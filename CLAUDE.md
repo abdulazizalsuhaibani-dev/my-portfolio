@@ -137,10 +137,17 @@ Several things look unfinished but are decisions:
   `success: true`, and loses nothing. That README lists every resource and why
   it is configured the way it is.
 
-  The function is **not deployed by the pipeline**. It is pasted into the
-  Lambda console, so editing `infra/contact/index.mjs` changes nothing live
-  until someone does that. It is plain ESM JavaScript, outside `tsconfig`'s
-  `include`, and imports only the AWS SDK clients the Node.js runtime ships.
+  The function's **code** is deployed by the pipeline: `buildspec.yml` zips
+  `infra/contact/index.mjs` and runs `aws lambda update-function-code` before
+  uploading the site, so the repo is its source of truth and console edits are
+  overwritten on the next push to `main`. Its configuration (environment
+  variables, Function URL, CORS) is console-only. The CodeBuild role's inline
+  policy `abdulaziz-alsuhaibani-myportfolio-lambda-deploy`
+  ([`deploy-policy.json`](infra/contact/deploy-policy.json)) allows updating
+  that one function only. The file is plain ESM JavaScript, outside
+  `tsconfig`'s `include`, so `tsc` never sees it; `node --check` in both
+  `buildspec.yml` and `ci.yml` is its only automated check. It imports only the
+  AWS SDK clients the Node.js runtime ships, and must stay a single file.
   It must not set CORS headers: the Function URL adds them, and duplicates
   make browsers reject the response.
 
@@ -214,7 +221,8 @@ Several things look unfinished but are decisions:
   | Registrar | Route 53 Domains (transferred from Cloudflare Registrar 2026-10-05), transfer lock + auto-renew on |
 
   On push to `main`, the pipeline runs [`buildspec.yml`](buildspec.yml), which
-  builds and then uploads `dist/` itself — there is no separate deploy stage,
+  builds, deploys the contact Lambda's code, and then uploads `dist/` itself —
+  there is no separate deploy stage,
   so hashed `assets/` can get a one-year immutable `Cache-Control` while
   `index.html` gets `max-age=0,must-revalidate`. Assets are synced *before*
   `index.html` so a new page never references files that aren't there yet,
@@ -223,8 +231,8 @@ Several things look unfinished but are decisions:
   inline policy `abdulaziz-alsuhaibani-myportfolio-cloudfront-invalidate`
   allows `cloudfront:CreateInvalidation` on that one distribution only, so
   changing the ID means changing the policy too. `ci.yml` still runs
-  `npm run build` on pull requests and pushes to other branches as a plain
-  check; it does not deploy.
+  `npm run build` and `node --check` on the Lambda on pull requests and pushes
+  to other branches as a plain check; it does not deploy.
 
   The contact form's `VITE_CONTACT_ENDPOINT` (the Function URL) comes from SSM
   Parameter Store (`/my-portfolio/VITE_CONTACT_ENDPOINT`), pulled in by

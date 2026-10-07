@@ -1,7 +1,8 @@
 # Build check for work that is not yet on main.
 #
 # `npm run build` is `tsc --noEmit && vite build` — the repository has no test
-# framework and no linter, so this is the whole gate.
+# framework and no linter, so that plus a syntax check of the contact Lambda
+# (deployed from main by buildspec.yml) is the whole gate.
 #
 # Deliberately given no VITE_* values: src/config.ts falls back to '' when they
 # are absent, so the build succeeds without them and this job exercises the
@@ -35,3 +36,5 @@ jobs:
       - run: npm ci
 
       - run: npm run build
+
+      - run: node --check infra/contact/index.mjs
